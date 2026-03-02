@@ -18,14 +18,14 @@ Requirements:
 class TextProcessor {
   static cleanText(text) {
     return text.toLowerCase()
-      .replace(/[^\w\s\.\,\-\+\#]/g, " ")
+      .replace(/[^\w\s-]/g, " ")
       .replace(/\s+/g, " ")
       .trim();
   }
 
   static extractTokens(text) {
     const stopWords = new Set([
-      "the","a","an","and","or","but","in","on","at","to","for","of","with","by","is","are","was","were"
+      "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by", "is", "are", "was", "were"
     ]);
     return this.cleanText(text)
       .split(/\s+/)
@@ -51,11 +51,21 @@ class KeywordExtractor {
 
   static categorize(word) {
     const categories = {
-      "Programming Language": ["java","python","javascript","typescript","c++","c#","php","ruby","go","rust","swift","kotlin"],
-      "Framework/Library": ["react","angular","vue","nodejs","express","django","flask","spring","laravel"],
-      "Database": ["mysql","postgresql","mongodb","redis","sqlite","oracle","cassandra","elasticsearch"],
-      "Cloud/DevOps": ["aws","azure","gcp","docker","kubernetes","jenkins","git","gitlab","cicd","devops"],
-      "Soft Skill": ["leadership","communication","teamwork","analytical","problem","solving"]
+      "Programming Language": [
+        "java", "python", "javascript", "typescript", "c++", "c#", "php", "ruby", "go", "rust", "swift", "kotlin", "dart", "scala", "clojure", "haskell", "lua", "perl", "r", "julia", "elixir", "erlang"
+      ],
+      "Framework/Library": [
+        "react", "angular", "vue", "nodejs", "express", "django", "flask", "spring", "laravel", "symfony", "asp.net", "rails", "fastapi", "nestJS", "nextJS", "nuxtJS", "svelte", "flutter", "react native", "tensorflow", "pytorch", "keras", "opencv", "bootstrap", "tailwind"
+      ],
+      "Database": [
+        "mysql", "postgresql", "mongodb", "redis", "sqlite", "oracle", "cassandra", "elasticsearch", "mariadb", "dynamodb", "firebase", "firestore", "couchdb", "neo4j", "sql server"
+      ],
+      "Cloud/DevOps": [
+        "aws", "azure", "gcp", "docker", "kubernetes", "jenkins", "git", "gitlab", "github", "cicd", "devops", "terraform", "ansible", "puppet", "chef", "vagrant", "circleci", "travisci", "heroku", "netlify", "vercel"
+      ],
+      "Soft Skill": [
+        "leadership", "communication", "teamwork", "analytical", "problem", "solving", "creativity", "adaptability", "management", "listening", "negotiation", "presentation", "emotional intelligence"
+      ]
     };
     for (const [cat, list] of Object.entries(categories)) {
       if (list.includes(word.toLowerCase())) return cat;
@@ -77,12 +87,20 @@ class ResumeMatcher {
 
     jdKeywords.forEach(kw => {
       const k = kw.keyword.toLowerCase();
-      if (resumeLower.includes(k) || resumeTokens.has(k)) {
+      const isExact = resumeLower.includes(k) || resumeTokens.has(k);
+
+      if (isExact) {
         present.push({ ...kw, matchType: "exact" });
-      } else if ([...resumeTokens].some(t => t.includes(k) || k.includes(t))) {
-        partial.push({ ...kw, matchType: "partial" });
       } else {
-        missing.push({ ...kw, priority: this.priority(kw) });
+        // More robust partial matching: only if keyword is > 2 chars 
+        // OR if it's a stand-alone token in the resume
+        const isPartial = k.length > 2 && [...resumeTokens].some(t => t.includes(k) || k.includes(t));
+
+        if (isPartial) {
+          partial.push({ ...kw, matchType: "partial" });
+        } else {
+          missing.push({ ...kw, priority: this.priority(kw) });
+        }
       }
     });
 
@@ -118,10 +136,12 @@ class ResumeMatcher {
       grouped[kw.category].push(kw.keyword);
     });
     const s = [];
-    if (grouped["Programming Language"]) s.push("Add languages: " + grouped["Programming Language"].join(", "));
-    if (grouped["Framework/Library"]) s.push("Include frameworks: " + grouped["Framework/Library"].join(", "));
-    if (grouped["Cloud/DevOps"]) s.push("Highlight cloud/DevOps: " + grouped["Cloud/DevOps"].join(", "));
-    return s;
+    if (grouped["Programming Language"]) s.push("🚀 Master these languages: " + grouped["Programming Language"].join(", "));
+    if (grouped["Framework/Library"]) s.push("🛠 Explore these frameworks: " + grouped["Framework/Library"].join(", "));
+    if (grouped["Database"]) s.push("🗄 Deep dive into databases: " + grouped["Database"].join(", "));
+    if (grouped["Cloud/DevOps"]) s.push("☁️ Enhance Cloud/DevOps skills: " + grouped["Cloud/DevOps"].join(", "));
+    if (grouped["Soft Skill"]) s.push("🤝 Work on these soft skills: " + grouped["Soft Skill"].join(", "));
+    return s.length > 0 ? s : ["✅ Your profile looks strong! Keep it up."];
   }
 }
 
@@ -153,7 +173,7 @@ function processFile(file) {
 
   } else if (ext === "pdf") {
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = function (e) {
       const typedarray = new Uint8Array(e.target.result);
       pdfjsLib.getDocument(typedarray).promise.then(pdf => {
         let textContent = "";
@@ -176,7 +196,7 @@ function processFile(file) {
 
   } else if (ext === "docx") {
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = function (e) {
       mammoth.extractRawText({ arrayBuffer: e.target.result })
         .then(result => {
           document.getElementById("resumeText").value = result.value;
@@ -202,12 +222,28 @@ function analyzeResume() {
   document.getElementById("loadingState").style.display = "block";
   document.getElementById("resultsSection").style.display = "none";
 
+  const aiPhases = [
+    "🤖 Extrapolating semantic context...",
+    "🧠 Analyzing neural network embeddings...",
+    "📊 Running ATS compatibility matrix...",
+    "⚡ Finding keyword synergies..."
+  ];
+  let phaseIdx = 0;
+  const loadText = document.querySelector("#loadingState p");
+  loadText.textContent = "🤖 Initializing AI Engine...";
+
+  const aiInterval = setInterval(() => {
+    loadText.textContent = aiPhases[phaseIdx];
+    phaseIdx = (phaseIdx + 1) % aiPhases.length;
+  }, 600);
+
   setTimeout(() => {
+    clearInterval(aiInterval);
     const results = ResumeMatcher.matchResume(resume, job);
     window.lastAnalysisResults = results;
     displayResults(results);
     document.getElementById("loadingState").style.display = "none";
-  }, 1000);
+  }, 2500);
 }
 
 // ================= RENDERING =================
@@ -272,7 +308,7 @@ function renderKeywordList(containerId, keywords, missing = false) {
 }
 
 function getBadgeClass(category) {
-  switch(category) {
+  switch (category) {
     case "Programming Language": return "badge-programming";
     case "Framework/Library": return "badge-framework";
     case "Database": return "badge-database";
@@ -299,24 +335,46 @@ function renderSuggestions(suggestions) {
 
 function renderChart(r) {
   const ctx = document.getElementById("categoryChart").getContext("2d");
-  const categories = ["Programming Language","Framework/Library","Database","Cloud/DevOps","Technical Skill","Soft Skill"];
-  const data = categories.map(cat => 
-    r.presentKeywords.filter(k => k.category === cat).length +
-    r.missingKeywords.filter(k => k.category === cat).length +
-    r.partialMatches.filter(k => k.category === cat).length
-  );
+  const categories = ["Programming Language", "Framework/Library", "Database", "Cloud/DevOps", "Technical Skill", "Soft Skill"];
+  const presentData = categories.map(cat => r.presentKeywords.filter(k => k.category === cat).length);
+  const partialData = categories.map(cat => r.partialMatches.filter(k => k.category === cat).length);
+  const missingData = categories.map(cat => r.missingKeywords.filter(k => k.category === cat).length);
 
   if (window.categoryChartInstance) window.categoryChartInstance.destroy();
   window.categoryChartInstance = new Chart(ctx, {
     type: "bar",
-    data: { 
-      labels: categories, 
-      datasets: [{ 
-        data, 
-        backgroundColor: ["#2563eb","#f59e0b","#16a34a","#0ea5e9","#9333ea","#db2777"] 
-      }] 
+    data: {
+      labels: categories,
+      datasets: [
+        { label: "Found", data: presentData, backgroundColor: "#10b981" },
+        { label: "Partial", data: partialData, backgroundColor: "#f59e0b" },
+        { label: "Missing", data: missingData, backgroundColor: "#ef4444" }
+      ]
     },
-    options: { responsive: true, plugins: { legend: { display: false } } }
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          stacked: true,
+          ticks: { color: '#e2e8f0' },
+          grid: { color: 'rgba(255, 255, 255, 0.1)' }
+        },
+        y: {
+          stacked: true,
+          beginAtZero: true,
+          ticks: { color: '#e2e8f0' },
+          grid: { color: 'rgba(255, 255, 255, 0.1)' }
+        }
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: { color: '#e2e8f0' }
+        }
+      }
+    }
   });
 }
 
@@ -333,49 +391,93 @@ function exportResults() {
 }
 
 function exportToWord(results) {
-  if (!results) return alert("No results to export");
+  if (!results) return alert("Please run an analysis first.");
 
-  let content = `
-  AI Resume Keyword Matcher Report
+  const content = `
+************************************************************
+          AI RESUME KEYWORD MATCHER REPORT
+************************************************************
+Generated on: ${new Date().toLocaleString()}
 
-  Match Score: ${results.matchPercentage}%
-  Total Keywords: ${results.totalJdKeywords}
-  Found: ${results.exactMatches}
-  Partial Matches: ${results.partialMatches.length}
-  Missing: ${results.missingCount}
+MATCH SCORE: ${results.matchPercentage}%
+------------------------------------------------------------
+SUMMARY STATS:
+- Total Keywords Identified: ${results.totalJdKeywords}
+- Exact Matches Found: ${results.exactMatches}
+- Partial Matches Detected: ${results.partialMatches.length}
+- Missing Keywords: ${results.missingCount}
 
-  ----------------------
-  Missing Keywords:
-  ${results.missingKeywords.map(kw => `- ${kw.keyword} (${kw.category}) Priority: ${kw.priority.toFixed(2)}`).join("\n")}
+INTERPRETATION: 
+${results.matchPercentage >= 75 ? "EXCELLENT MATCH! Your resume is highly optimized for this role." :
+      results.matchPercentage >= 55 ? "GOOD MATCH. Some minor adjustments could significantly boost your visibility." :
+        "SIGINIFICANT OPTIMIZATION NEEDED. Your resume lacks several key skills required for this role."}
 
-  ----------------------
-  AI Recommendations:
-  ${results.suggestions.map((s, i) => `${i+1}. ${s}`).join("\n")}
+------------------------------------------------------------
+MISSING KEYWORDS (Top Priority):
+${results.missingKeywords.slice(0, 15).map(kw => `[ ] ${kw.keyword.toUpperCase()} (${kw.category})`).join("\n")}
+
+------------------------------------------------------------
+AI RECOMMENDATIONS & TIPS:
+${results.suggestions.map((s, i) => `${i + 1}. ${s}`).join("\n")}
+
+------------------------------------------------------------
+Thank you for using the AI Resume Keyword Matcher!
+************************************************************
   `;
 
-  const blob = new Blob([`\ufeff${content}`], { type: "application/msword" });
+  const blob = new Blob([content], { type: "text/plain" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `resume_analysis_${new Date().toISOString().slice(0,10)}.doc`;
+  a.download = `Resume_Analysis_${new Date().toISOString().slice(0, 10)}.txt`;
   a.click();
   URL.revokeObjectURL(url);
 }
-function setTheme(theme) {
-  const body = document.body;
-  body.classList.remove("theme-teal", "theme-orange", "theme-indigo", "theme-dark");
-  body.classList.add(theme);
-}
-const themes = ["theme-teal", "theme-orange", "theme-indigo", "theme-dark"];
-let currentTheme = 0;
-
-function cycleTheme() {
-  const body = document.body;
-  body.classList.remove(...themes);
-  currentTheme = (currentTheme + 1) % themes.length;
-  body.classList.add(themes[currentTheme]);
-}
-
 
 // ================= INIT =================
 document.addEventListener("DOMContentLoaded", setupFileHandling);
+
+// ================= CHATBOT =================
+function toggleChatbot() {
+  const container = document.getElementById('chatbotContainer');
+  container.style.display = container.style.display === 'flex' ? 'none' : 'flex';
+}
+
+function sendChatMessage() {
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  appendChatMsg(msg, 'user');
+  input.value = '';
+
+  const lowerMsg = msg.toLowerCase();
+  let aiResponse = "I'm a simple AI assistant! I can help you understand how to use this tool.";
+
+  if (lowerMsg.includes('ats') || lowerMsg.includes('score')) {
+    aiResponse = "The ATS score is generated by analyzing how closely your resume keywords match the job description. Aim for over 75% for the best chances!";
+  } else if (lowerMsg.includes('file') || lowerMsg.includes('support')) {
+    aiResponse = "We currently support parsing text directly from PDF, DOCX, and plain TXT files securely right in your browser!";
+  } else if (lowerMsg.includes('improve') || lowerMsg.includes('missing')) {
+    aiResponse = "To improve your score, check the 'Missing Keywords' section. Add those specific terms to your resume naturally, especially the high-priority technical skills!";
+  } else if (lowerMsg.includes('hello') || lowerMsg.includes('hi')) {
+    aiResponse = "Hello! Ready to optimize your resume? Ask me anything about the tool.";
+  } else if (lowerMsg.includes('export')) {
+    aiResponse = "You can export your results to either JSON or Word (.doc) formats using the buttons in the top header menu!";
+  } else {
+    aiResponse = "That's a great question! I'm currently programmed to answer basics about ATS scoring, supported file types, exporting data, and how to improve your resume.";
+  }
+
+  setTimeout(() => {
+    appendChatMsg(aiResponse, 'ai');
+  }, 600);
+}
+
+function appendChatMsg(text, sender) {
+  const container = document.getElementById('chatbotMessages');
+  const div = document.createElement('div');
+  div.className = `chat-msg ${sender}`;
+  div.textContent = text;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
