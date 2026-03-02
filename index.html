@@ -1,131 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>AI Resume Keyword Matcher</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Welcome - AI Resume Keyword Matcher</title>
+    <link rel="stylesheet" href="style.css">
 
-  <!-- Chart.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-  <!-- PDF.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
-  <!-- Mammoth.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
+    <!-- Premium Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
-<body class="app theme-teal">
 
+<body class="app">
 
-  <header class="header">
-    <h1>🚀 AI Resume Keyword Matcher</h1>
-    <p>Optimize your resume with AI-powered keyword insights</p>
-    <div class="header-actions">
-      <button class="btn secondary" onclick="exportResults()">📥 Export JSON</button>
-      <button class="btn secondary" onclick="exportToWord(window.lastAnalysisResults)">📄 Export Word</button>
-    </div><div class="theme-switcher">
-
-      <button class="btn secondary" onclick="cycleTheme()">🎨 Change Theme</button>
-
-
-  
-
-  </header>
-
-  <main class="main">
-    <!-- Input Section -->
-    <section class="input-section glass">
-      <div class="input-grid">
-        <!-- Resume -->
-        <div class="input-card">
-          <h2>📄 Upload Resume</h2>
-          <div class="file-upload" id="resumeUpload">
-            <p>📂 Drop file here or click to browse</p>
-            <input type="file" id="resumeFile" accept=".txt,.pdf,.docx" hidden>
-            <button class="btn small" onclick="loadSampleResume()">Load Sample Resume</button>
-          </div>
-          <textarea id="resumeText" placeholder="Or paste your resume here..."></textarea>
+    <header class="header">
+        <h1>🚀 AI Resume Keyword Matcher</h1>
+        <div class="header-actions">
+            <a href="app.html" class="btn secondary">🎯 Resume Analysis</a>
+            <button class="btn secondary" onclick="toggleModal('howItWorksModal', true)">📖 How it Works</button>
         </div>
+    </header>
 
-        <!-- Job Description -->
-        <div class="input-card">
-          <h2>📋 Job Description</h2>
-          <textarea id="jobDescription" placeholder="Paste the job description here..."></textarea>
-          <button class="btn small" onclick="loadSampleJob()">Load Sample Job</button>
+    <!-- Interactive Modal -->
+    <div id="howItWorksModal" class="modal" onclick="if(event.target === this) toggleModal('howItWorksModal', false)">
+        <div class="modal-content glass">
+            <span class="close-btn" onclick="toggleModal('howItWorksModal', false)">&times;</span>
+            <h2 style="color: #4f46e5; margin-bottom: 15px;">How the AI Matcher Works</h2>
+            <p style="margin-bottom: 20px;">
+                1. <strong>Upload Resume:</strong> We parse PDF, DOCX, and TXT files instantly entirely in your
+                browser.<br><br>
+                2. <strong>Job Description:</strong> Paste target requirements. We extract the core technology stack and
+                soft skills required using term frequency-inverse document frequency algorithms.<br><br>
+                3. <strong>Smart Matching:</strong> We find exact matches, partial contextual matches, and expose
+                missing high-priority skills so you know exactly what to add to your resume before applying!
+            </p>
+            <button class="btn primary" onclick="toggleModal('howItWorksModal', false)">Got it!</button>
         </div>
-      </div>
-      <button class="btn primary analyze" onclick="analyzeResume()">⚡ Analyze Resume Match</button>
-    </section>
-
-    <!-- Loading -->
-    <div class="loading" id="loadingState">
-      <div class="loading-spinner"></div>
-      <p>🤖 AI is analyzing your resume...</p>
     </div>
 
-    <!-- Results -->
-    <section class="results glass" id="resultsSection">
-      <div class="score-ring">
-        <svg>
-          <circle class="bg" cx="80" cy="80" r="70"/>
-          <circle class="progress" id="progressCircle" cx="80" cy="80" r="70"/>
-        </svg>
-        <div class="score-text" id="matchScore">0%</div>
-        <p id="matchInterpretation">Ready to analyze</p>
-      </div>
+    <main class="main hero glass">
+        <h2 style="font-size: 2.5rem; margin-bottom: 20px; color: #fff;">Optimize Your Resume for ATS</h2>
+        <p>
+            An AI-powered tool to <strong>analyze resumes against job descriptions</strong> and highlight
+            <strong>missing keywords</strong> and <strong>core skill gaps</strong>.
+            Gain a competitive edge with immediate categorical feedback and smart AI recommendations.
+        </p>
 
-      <!-- Stats -->
-      <div class="stats">
-        <div class="stat">
-          <h3 id="presentCount">0</h3>
-          <p>Keywords Found</p>
+        <div class="stats" style="margin-bottom: 40px;">
+            <div class="stat">
+                <h3 style="font-size: 1.5rem;">🔍 Analyze</h3>
+                <p>Deep keyword extraction</p>
+            </div>
+            <div class="stat">
+                <h3 style="font-size: 1.5rem;">📊 Visualize</h3>
+                <p>Categorical skill matrix</p>
+            </div>
+            <div class="stat">
+                <h3 style="font-size: 1.5rem;">💡 Optimize</h3>
+                <p>Smart skill suggestions</p>
+            </div>
         </div>
-        <div class="stat">
-          <h3 id="partialCount">0</h3>
-          <p>Partial Matches</p>
-        </div>
-        <div class="stat">
-          <h3 id="missingCount">0</h3>
-          <p>Missing Keywords</p>
-        </div>
-        <div class="stat">
-          <h3 id="totalCount">0</h3>
-          <p>Total Keywords</p>
-        </div>
-      </div>
 
-      <!-- Chart -->
-      <div class="chart-card">
-        <canvas id="categoryChart"></canvas>
-      </div>
+        <a href="app.html" class="btn primary hero-btn">⚡ Analyze My Resume</a>
+    </main>
 
-      <!-- Keyword Lists -->
-      <div class="keywords-grid">
-        <div class="keywords-card">
-          <h3>✅ Found Keywords</h3>
-          <div id="presentKeywords"></div>
-        </div>
-        <div class="keywords-card">
-          <h3>⚡ Partial Matches</h3>
-          <div id="partialKeywords"></div>
-        </div>
-        <div class="keywords-card">
-          <h3>❌ Missing Keywords</h3>
-          <div id="missingKeywords"></div>
-        </div>
-      </div>
 
-      <!-- Suggestions -->
-      <div class="suggestions">
-        <h3>💡 AI Recommendations</h3>
-        <div id="suggestions"></div>
-      </div>
-    </section>
-  </main>
 
-  <footer class="footer">
-    <p>⚡ Built with HTML, CSS, JS, Chart.js — BY Srikannan J</p>
-  </footer>
+    <script>
 
-  <script src="app.js"></script>
+        function toggleModal(modalId, show) {
+            document.getElementById(modalId).style.display = show ? "flex" : "none";
+        }
+    </script>
 </body>
+
 </html>
